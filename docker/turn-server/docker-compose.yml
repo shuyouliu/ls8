@@ -1,0 +1,8 @@
+version: '3'
+services:
+  coturn:
+    build: .
+    network_mode: "host"
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf
+    restart: always

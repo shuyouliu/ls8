@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fixed PeerJS Server Test</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        .status { margin: 10px; padding: 10px; border: 1px solid #ccc; }
+        .error { color: red; background-color: #ffebee; }
+        .success { color: green; background-color: #e8f5e9; }
+        .container { max-width: 800px; margin: 20px auto; padding: 20px; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PeerJS Server Connection Test (Fixed)</h1>
+        <div class="status" id="status">Connecting...</div>
+        <div class="status" id="peerId"></div>
+        <div class="status" id="connectionInfo"></div>
+        <div class="status" id="debugInfo" style="font-family: monospace; font-size: 0.9em;"></div>
+    </div>
+
+    <script>
+        const peer = new Peer(undefined, {
+            host: 'aidev.jbtmty.com',
+            port: 443,
+            secure: true,
+            // 核心修改：path只保留Nginx代理的路径，无需加/peerjs（服务器会自动处理）
+            path: '/peerjs-server',  
+            debug: 2,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        });
+
+        peer.on('open', (id) => {
+            document.getElementById('status').className = 'status success';
+            document.getElementById('status').textContent = '✅ Connection successful!';
+            document.getElementById('peerId').textContent = `Peer ID: ${id}`;
+            document.getElementById('connectionInfo').textContent = 
+                `Connected to: https://${peer._options.host}:${peer._options.port}${peer._options.path}`;
+            console.log('Peer ID:', id);
+        });
+
+        peer.on('error', (error) => {
+            document.getElementById('status').className = 'status error';
+            document.getElementById('status').textContent = `❌ Error: ${error.type}`;
+            document.getElementById('connectionInfo').textContent = `Message: ${error.message}`;
+            document.getElementById('debugInfo').textContent = `Debug: ${JSON.stringify(error, null, 2)}`;
+            console.error('Error:', error);
+        });
+
+        // 10秒超时检测
+        setTimeout(() => {
+            if (document.getElementById('status').textContent === 'Connecting...') {
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ Connection timed out';
+                document.getElementById('connectionInfo').textContent = 'Check if Nginx is running and PeerServer is up';
+            }
+        }, 10000);
+    </script>
+</body>
+</html>
